@@ -65,7 +65,7 @@ dialogs. The Linguist tools are needed only when regenerating the `.qm`.
 ## Installation
 
 ```bash
-git clone https://github.com/yourusername/usb-speed-tester.git
+git clone https://github.com/wachin/usb-speed-tester.git
 cd usb-speed-tester
 # Install Python deps (if not using system packages)
 pip install -r requirements.txt

@@ -60,7 +60,7 @@ APP_VERSION = "1.0.0"
 COPYRIGHT = "© 2026 Washington Indacochea Delgado"
 AUTHOR = "Washington Indacochea Delgado"
 EMAIL = "linuxfrontier@proton.me"
-WEBSITE = "https://github.com/wachin/repopath-sanitizer"
+WEBSITE = "https://github.com/wachin/usb-speed-tester"
 LICENSE_NAME = "GPL-3.0"
 
 

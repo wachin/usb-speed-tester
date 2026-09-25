@@ -24,7 +24,7 @@ A PyQt6 desktop application for analyzing, benchmarking, and diagnosing USB stor
 | **Collapsible Test List** | The five test checkboxes stay folded into one line and show how many are enabled |
 | **About Box** | Author, contact, licence and technologies, with the large application icon and clickable links |
 | **Progress Tracking** | Real-time progress bar for long-running tests |
-| **Internationalization** | All UI strings in English with `QTranslator` support for Spanish; the tutorial ships in EN and ES |
+| **Internationalization** | Full Spanish translation included; the UI, the tutorial and the About box all follow the system locale |
 
 ## Screenshots
 
@@ -51,6 +51,16 @@ sudo dnf install python3-pyqt6 python3-pyudev python3-psutil \
 ```bash
 pip install PyQt6 pyudev psutil
 ```
+
+### Optional (only to work on translations)
+```bash
+# Debian/Ubuntu
+sudo apt install qt6-translations-l10n qt6-tools-dev-tools
+# Arch Linux
+sudo pacman -S qt6-translations qt6-tools
+```
+`qt6-translations-l10n` provides Qt's own Spanish strings for the standard
+dialogs. The Linguist tools are needed only when regenerating the `.qm`.
 
 ## Installation
 
@@ -110,8 +120,9 @@ usb-speed-tester/
 ├── .gitignore
 ├── LICENSE
 ├── README.md
-└── translations/        # .qm translation files (generated from .ts)
-    └── usbtester_es.qm  # Spanish translation example
+└── translations/        # Qt Linguist catalogues
+    ├── usbtester_es.ts  # Spanish source (editable)
+    └── usbtester_es.qm  # Spanish compiled (loaded at runtime)
 ```
 
 ## Tutorial (Explanations tab)
@@ -161,19 +172,40 @@ back to the SVG source if no PNG has been generated yet. Keep scale 1 in
 
 ## Internationalization (i18n)
 
-All UI strings use `QCoreApplication.translate()` (via `self.tr()`). To add Spanish:
+Every UI string goes through `self.tr()`, so the interface follows the system
+locale. **Spanish is fully translated** (81 strings) and ships ready to use:
+
+| File | Role |
+|------|------|
+| `translations/usbtester_es.ts` | Editable source, open it with Qt Linguist |
+| `translations/usbtester_es.qm` | Compiled translation loaded at runtime |
+
+`TranslationManager` looks for `usbtester_<locale>.qm` using the full locale
+(`es_EC`) first and the bare language (`es`) second, so one file covers every
+Spanish-speaking region. It also loads Qt's own `qtbase_<language>.qm`, which
+translates the standard buttons such as *Close* → *Cerrar*. The tutorial and the
+About box follow the same locale.
+
+To add another language:
 
 ```bash
-# 1. Extract strings
-pylupdate6 main.py -ts translations/usbtester_es.ts
+# 1. Extract the strings into a new catalogue
+pylupdate6 main.py -ts translations/usbtester_fr.ts
 
-# 2. Edit translations/usbtester_es.ts with Qt Linguist
+# 2. Translate it (Qt Linguist is the friendliest option)
+linguist-qt6 translations/usbtester_fr.ts
 
-# 3. Compile
-lrelease translations/usbtester_es.ts
+# 3. Compile it — the application picks it up on the next start
+lrelease translations/usbtester_fr.ts
+
+# 4. Copy tutorial/EN to tutorial/FR and translate tutorial.md
+cp -r tutorial/EN tutorial/FR
+python3 tools/svg_to_png.py      # gives tutorial/FR its diagrams
 ```
 
-The app auto-loads `translations/usbtester_<locale>.qm` at startup.
+Re-running `pylupdate6` on an existing `.ts` merges the new strings and keeps
+the translations you already made, so it is safe to repeat after editing
+`main.py`.
 
 ## Architecture
 

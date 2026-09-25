@@ -27,8 +27,11 @@ build/
 Thumbs.db
 
 # Translations
+# Compiled .qm files ARE shipped: the application loads them at runtime, so the
+# ones under translations/ must be committed together with their .ts source.
 *.qm
-translations/*.qm
+!translations/*.qm
+translations/*.ts.bak
 
 # Test files created during benchmarks
 .usb_test_tmp

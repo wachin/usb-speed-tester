@@ -47,6 +47,7 @@ ASSETS_DIR = os.path.join(APP_DIR, "assets")
 DIAGRAMS_SVG_DIR = os.path.join(ASSETS_DIR, "svg")
 ICON_DIR = os.path.join(ASSETS_DIR, "icon")
 TUTORIAL_DIR = os.path.join(APP_DIR, "tutorial")
+TRANSLATIONS_DIR = os.path.join(APP_DIR, "translations")
 
 ICON_NAME = "usb-speed-tester"
 ICON_SIZES = (16, 24, 32, 48, 64, 128, 256)
@@ -165,21 +166,47 @@ def about_html(language: str) -> str:
 
 # ─── i18n ───────────────────────────────────────────────
 class TranslationManager:
-    """Manages application translations via QTranslator."""
+    """Installs the application translation that matches the system locale.
 
-    @staticmethod
-    def install(app: QApplication) -> bool:
-        translator = QTranslator()
-        locale = QLocale.system().name()
-        qm_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "translations",
-            f"usbtester_{locale}.qm",
-        )
-        if os.path.exists(qm_path) and translator.load(qm_path):
-            app.installTranslator(translator)
-            return True
-        return False
+    Two details matter here:
+
+    * ``QCoreApplication.installTranslator()`` does **not** take ownership of
+      the translator, so every QTranslator keeps the application as its parent.
+      A local variable would be garbage collected and the UI would silently
+      fall back to English.
+    * The locale is tried full first (``es_EC``) and then by language (``es``),
+      so one ``usbtester_es.qm`` covers every Spanish-speaking region.
+    """
+
+    _translators: List[QTranslator] = []
+
+    @classmethod
+    def install(cls, app: QApplication) -> bool:
+        locale = QLocale.system().name() or DEFAULT_LANGUAGE
+        names = list(dict.fromkeys([locale, locale.split("_")[0]]))
+
+        found = False
+        for name in names:
+            if cls._load(app, os.path.join(TRANSLATIONS_DIR, f"usbtester_{name}.qm")):
+                found = True
+                break
+
+        # Qt's own strings: standard dialog buttons, QMessageBox, file dialogs.
+        qt_dir = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
+        for name in names:
+            cls._load(app, os.path.join(qt_dir, f"qtbase_{name}.qm"))
+        return found
+
+    @classmethod
+    def _load(cls, app: QApplication, path: str) -> bool:
+        if not os.path.exists(path):
+            return False
+        translator = QTranslator(app)          # parented, so it stays alive
+        if not translator.load(path):
+            return False
+        app.installTranslator(translator)
+        cls._translators.append(translator)
+        return True
 
 
 # ─── Data Model ─────────────────────────────────────────

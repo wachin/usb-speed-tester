@@ -332,6 +332,38 @@ class SmartHealthWorker(BaseTestWorker):
             self._emit_error(f"smartctl: {e}")
 
 
+class CombinedRootWorker(BaseTestWorker):
+    """Runs both hdparm and smartctl in a single pkexec call."""
+
+    def run(self):
+        try:
+            self._emit_progress(0, self.tr("Running hdparm + smartctl (requires root)..."))
+            script = (
+                f"/sbin/hdparm -tT {self.device.device_node}\n"
+                f"/sbin/smartctl -a {self.device.device_node}"
+            )
+            result = subprocess.run(
+                ["pkexec", "/bin/bash", "-c", script],
+                capture_output=True,
+                text=True,
+                timeout=90,
+            )
+            output = result.stdout + result.stderr
+            if "NOT_IOCTLABLE" in output:
+                output += "\n" + self.tr("Warning: hdparm - device not accessible via ioctl.")
+            if "smartctl" in output.lower() and "not supported" in output.lower():
+                output += "\n" + self.tr("Note: SMART not supported on this device "
+                                         "(typical for USB flash drives).")
+            self._emit_progress(100, self.tr("Root tests complete"))
+            self._emit_finished(self.device.device_node, output)
+        except FileNotFoundError:
+            self._emit_error(self.tr("pkexec not found. Install PolicyKit."))
+        except subprocess.TimeoutExpired:
+            self._emit_error(self.tr("Combined root tests timed out"))
+        except Exception as e:
+            self._emit_error(f"Combined root tests: {e}")
+
+
 # ─── Hotplug Monitor ────────────────────────────────────
 class DeviceMonitor(QThread):
     """Monitors USB hotplug events via pyudev."""
@@ -672,14 +704,22 @@ class MainWindow(QMainWindow):
         tests = []
         if self.cb_bus.isChecked():
             tests.append(BusAnalysisWorker(device))
-        if self.cb_read.isChecked():
-            tests.append(ReadBenchmarkWorker(device))
+        
+        # Combine hdparm + smartctl into single pkexec call if both selected
+        read_checked = self.cb_read.isChecked()
+        smart_checked = self.cb_smart.isChecked()
+        if read_checked and smart_checked:
+            tests.append(CombinedRootWorker(device))
+        else:
+            if read_checked:
+                tests.append(ReadBenchmarkWorker(device))
+            if smart_checked:
+                tests.append(SmartHealthWorker(device))
+        
         if self.cb_write.isChecked():
             tests.append(WriteBenchmarkWorker(device))
         if self.cb_fio.isChecked():
             tests.append(FioBenchmarkWorker(device))
-        if self.cb_smart.isChecked():
-            tests.append(SmartHealthWorker(device))
         self._run_next_test(device, tests, 0)
 
     def _run_next_test(self, device: USBDevice, tests: list, index: int):
@@ -707,45 +747,74 @@ class MainWindow(QMainWindow):
 
     def _interpret_output(self, output: str) -> str:
         lines = []
-        if "hdparm" in output.lower():
-            cached_match = re.search(r'Timing buffered.*?\((\d+)\s*MB/s', output)
-            cached = cached_match.group(1) if cached_match else None
-            real_match = re.search(r'Timing buffered.*?(\d+)\s*MB/s', output)
-            real_speed = real_match.group(1) if real_match else None
-            if cached and real_speed:
-                cached_val = int(cached)
-                real_val = int(real_speed)
-                if real_val < cached_val * 0.5:
-                    lines.append(self.tr("Write speed is much slower than cached read. "
-                                         "The flash chip is limiting write throughput. "
-                                         "This is normal for USB flash drives."))
+        out_lower = output.lower()
+        
+        # hdparm analysis
+        if "timing cached reads" in out_lower and "timing buffered disk reads" in out_lower:
+            cached_match = re.search(r'Timing cached reads:.*?(\d+(?:\.\d+)?)\s*MB/s', output)
+            real_match = re.search(r'Timing buffered disk reads:.*?(\d+(?:\.\d+)?)\s*MB/s', output)
+            if cached_match and real_match:
+                cached_val = float(cached_match.group(1))
+                real_val = float(real_match.group(1))
+                if real_val < 40:
+                    lines.append(self.tr("Physical read speed is %.1f MB/s — typical for USB 2.0. "
+                                         "If this is a USB 3.0 device, check the port/cable.") % real_val)
+                elif real_val < 100:
+                    lines.append(self.tr("Physical read speed is %.1f MB/s — consistent with USB 3.0 "
+                                         "but limited by the flash chip (common for consumer drives).") % real_val)
                 else:
-                    lines.append(self.tr("Write speed is reasonable compared to cached read."))
-        if "smartctl" in output.lower():
-            if "reallocated" in output.lower():
-                lines.append(self.tr("Warning: Reallocated sectors detected. "
-                                     "The device is degrading. Backup your data."))
-            if "pending" in output.lower():
-                lines.append(self.tr("Warning: Pending sectors detected. "
-                                     "The drive may be failing soon."))
-        if "fio" in output.lower():
-            iops_match = re.search(r'(\d+)\s*IOPS', output)
-            if iops_match:
-                iops = int(iops_match.group(1))
+                    lines.append(self.tr("Excellent physical read speed: %.1f MB/s — high-end USB 3.x device.") % real_val)
+
+        # fio analysis
+        if "seqread" in out_lower or "randread4k" in out_lower or "randwrite4k" in out_lower:
+            read_bw = re.search(r'seqread.*?read:\s*([\d.]+)\s*MB/s', output, re.DOTALL)
+            write_bw = re.search(r'seqwrite.*?write:\s*([\d.]+)\s*MB/s', output, re.DOTALL)
+            rand_read_iops = re.search(r'randread4k.*?read:.*?(\d+)\s*IOPS', output, re.DOTALL)
+            rand_write_iops = re.search(r'randwrite4k.*?write:.*?(\d+)\s*IOPS', output, re.DOTALL)
+            
+            if read_bw:
+                bw = float(read_bw.group(1))
+                if bw > 100:
+                    lines.append(self.tr("Sequential read: %.1f MB/s — good USB 3.x performance.") % bw)
+                elif bw > 30:
+                    lines.append(self.tr("Sequential read: %.1f MB/s — USB 2.0 speeds detected.") % bw)
+            if write_bw:
+                bw = float(write_bw.group(1))
+                lines.append(self.tr("Sequential write: %.1f MB/s — typical for USB flash (no DRAM cache).") % bw)
+            if rand_read_iops:
+                iops = int(rand_read_iops.group(1))
                 if iops < 1000:
-                    lines.append(self.tr("Low IOPS detected (%d). "
-                                         "The flash controller may be slow or the USB bus is bottlenecked.") % iops)
+                    lines.append(self.tr("Random 4K read: %d IOPS — low, flash controller bottleneck.") % iops)
                 else:
-                    lines.append(self.tr("Good IOPS performance."))
-        if "lsusb" in output.lower():
+                    lines.append(self.tr("Random 4K read: %d IOPS — decent.") % iops)
+            if rand_write_iops:
+                iops = int(rand_write_iops.group(1))
+                if iops < 500:
+                    lines.append(self.tr("Random 4K write: %d IOPS — very low, typical for cheap flash.") % iops)
+                else:
+                    lines.append(self.tr("Random 4K write: %d IOPS — acceptable.") % iops)
+
+        # smartctl analysis
+        if "smartctl" in out_lower:
+            if "unknown usb bridge" in out_lower or "not supported" in out_lower:
+                lines.append(self.tr("SMART not supported via USB bridge — normal for flash drives. "
+                                     "Use vendor tools for health info."))
+            elif "reallocated" in out_lower or "pending" in out_lower:
+                lines.append(self.tr("Warning: Reallocated/pending sectors — backup data immediately."))
+            elif "passed" in out_lower or "healthy" in out_lower:
+                lines.append(self.tr("SMART health check passed."))
+
+        # lsusb analysis
+        if "mass storage" in out_lower:
             if "5000M" in output:
-                lines.append(self.tr("USB 3.x speed negotiated successfully."))
+                lines.append(self.tr("USB 3.x link negotiated (5000M) — device connected at SuperSpeed."))
             elif "480M" in output:
-                lines.append(self.tr("USB 2.0 speed detected. "
-                                     "Check cable/port for USB 3.x compatibility."))
+                lines.append(self.tr("USB 2.0 link only (480M) — check port, cable, or device compatibility."))
+            else:
+                lines.append(self.tr("USB mass storage detected but link speed unknown."))
+
         if not lines:
-            lines.append(self.tr("No specific analysis available. "
-                                 "Check the Technical Log for details."))
+            lines.append(self.tr("No specific analysis available. Check the Technical Log for details."))
         return "\n".join(lines)
 
     def closeEvent(self, event):

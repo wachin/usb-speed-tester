@@ -1,0 +1,545 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  Where the "SS" marking sits on a laptop / PC panel.
+  Top:    two USB 3.x (SuperSpeed) ports marked with the SS + USB trident symbol.
+  Bottom: a USB 2.0 port for comparison (no SS marking, black insert).
+-->
+
+<svg
+   width="760"
+   height="540"
+   viewBox="0 0 760 540"
+   version="1.1"
+   id="svg55"
+   sodipodi:docname="usb3-ss-ports.svg"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview55"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.9462963"
+     inkscape:cx="396.2818"
+     inkscape:cy="334.46184"
+     inkscape:window-width="1360"
+     inkscape:window-height="713"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg55" />
+  <defs
+     id="defs11">
+    <linearGradient
+       id="metal"
+       x1="0"
+       y1="0"
+       x2="1"
+       y2="1">
+      <stop
+         offset="0"
+         stop-color="#3c434c"
+         id="stop1" />
+      <stop
+         offset="0.45"
+         stop-color="#232830"
+         id="stop2" />
+      <stop
+         offset="1"
+         stop-color="#161a20"
+         id="stop3" />
+    </linearGradient>
+    <linearGradient
+       id="shell"
+       x1="0"
+       y1="0"
+       x2="0"
+       y2="1">
+      <stop
+         offset="0"
+         stop-color="#e7ebf0"
+         id="stop4" />
+      <stop
+         offset="0.5"
+         stop-color="#b6bec8"
+         id="stop5" />
+      <stop
+         offset="1"
+         stop-color="#8d959f"
+         id="stop6" />
+    </linearGradient>
+    <linearGradient
+       id="blue"
+       x1="0"
+       y1="0"
+       x2="0"
+       y2="1">
+      <stop
+         offset="0"
+         stop-color="#4a9bf5"
+         id="stop7" />
+      <stop
+         offset="0.55"
+         stop-color="#2775d6"
+         id="stop8" />
+      <stop
+         offset="1"
+         stop-color="#17539f"
+         id="stop9" />
+    </linearGradient>
+    <linearGradient
+       id="band"
+       x1="0"
+       y1="0"
+       x2="0"
+       y2="1">
+      <stop
+         offset="0"
+         stop-color="#ffffff"
+         id="stop10" />
+      <stop
+         offset="1"
+         stop-color="#eef3f9"
+         id="stop11" />
+    </linearGradient>
+  </defs>
+  <!-- ══ Brushed metal panel ══ -->
+  <rect
+     x="0"
+     y="0"
+     width="760"
+     height="372"
+     rx="18"
+     fill="url(#metal)"
+     id="rect11" />
+  <g
+     stroke="#ffffff"
+     stroke-opacity="0.05"
+     stroke-width="1.4"
+     id="g16">
+    <path
+       d="M12 40 H748"
+       id="path11" />
+    <path
+       d="M12 96 H748"
+       id="path12" />
+    <path
+       d="M12 205 H748"
+       id="path13" />
+    <path
+       d="M12 262 H748"
+       id="path14" />
+    <path
+       d="M12 318 H748"
+       id="path15" />
+    <path
+       d="M12 352 H748"
+       id="path16" />
+  </g>
+  <g
+     stroke="#000000"
+     stroke-opacity="0.18"
+     stroke-width="1.2"
+     id="g21">
+    <path
+       d="M12 68 H748"
+       id="path17" />
+    <path
+       d="M12 148 H748"
+       id="path18" />
+    <path
+       d="M12 236 H748"
+       id="path19" />
+    <path
+       d="M12 292 H748"
+       id="path20" />
+    <path
+       d="M12 335 H748"
+       id="path21" />
+  </g>
+  <!-- ══ Engraved SS + USB trident marking ══ -->
+  <text
+     x="250"
+     y="104"
+     font-family="DejaVu Sans"
+     font-size="72"
+     font-weight="bold"
+     fill="#e9eef5"
+     id="text21">SS</text>
+  <g
+     fill="none"
+     stroke="#e9eef5"
+     stroke-width="9"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="g24">
+    <path
+       d="M352 82 H494"
+       id="path22" />
+    <path
+       d="M400 82 L426 56 H452"
+       id="path23" />
+    <path
+       d="M422 82 L448 108 H474"
+       id="path24" />
+  </g>
+  <g
+     fill="#e9eef5"
+     id="g25">
+    <circle
+       cx="352"
+       cy="82"
+       r="9"
+       id="circle24" />
+    <circle
+       cx="462"
+       cy="56"
+       r="10"
+       id="circle25" />
+    <rect
+       x="474"
+       y="96"
+       width="22"
+       height="22"
+       rx="3"
+       id="rect25" />
+    <polygon
+       points="494,73 518,82 494,91"
+       id="polygon25" />
+  </g>
+  <!-- ══ Bracket: the symbol applies to the ports below ══ -->
+  <g
+     fill="none"
+     stroke="#7f8b9b"
+     stroke-width="6"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="g26">
+    <path
+       d="M190 170 V140 H556"
+       id="path25" />
+    <path
+       d="M500 140 V170"
+       id="path26" />
+  </g>
+  <polygon
+     points="554,130 580,140 554,150"
+     fill="#7f8b9b"
+     id="polygon26" />
+  <!-- ══ USB 3.x SuperSpeed port (left) ══ -->
+  <g
+     id="g34">
+    <rect
+       x="70"
+       y="180"
+       width="240"
+       height="120"
+       rx="12"
+       fill="url(#shell)"
+       stroke="#6f7883"
+       stroke-width="2"
+       id="rect26" />
+    <rect
+       x="80"
+       y="190"
+       width="220"
+       height="100"
+       rx="6"
+       fill="#0b0d10"
+       id="rect27" />
+    <rect
+       x="84"
+       y="193"
+       width="212"
+       height="5"
+       fill="#ffffff"
+       fill-opacity="0.10"
+       id="rect28" />
+    <rect
+       x="98"
+       y="214"
+       width="176"
+       height="26"
+       rx="3"
+       fill="url(#blue)"
+       id="rect29" />
+    <rect
+       x="98"
+       y="238"
+       width="176"
+       height="6"
+       fill="#12457f"
+       fill-opacity="0.85"
+       id="rect30" />
+    <rect
+       x="110"
+       y="262"
+       width="24"
+       height="9"
+       rx="2"
+       fill="#cfa94f"
+       fill-opacity="0.85"
+       id="rect31" />
+    <rect
+       x="148"
+       y="262"
+       width="24"
+       height="9"
+       rx="2"
+       fill="#cfa94f"
+       fill-opacity="0.85"
+       id="rect32" />
+    <rect
+       x="186"
+       y="262"
+       width="24"
+       height="9"
+       rx="2"
+       fill="#cfa94f"
+       fill-opacity="0.85"
+       id="rect33" />
+    <rect
+       x="224"
+       y="262"
+       width="24"
+       height="9"
+       rx="2"
+       fill="#cfa94f"
+       fill-opacity="0.85"
+       id="rect34" />
+  </g>
+  <!-- ══ USB 3.x SuperSpeed port (right) ══ -->
+  <g
+     id="g43">
+    <rect
+       x="380"
+       y="180"
+       width="240"
+       height="120"
+       rx="12"
+       fill="url(#shell)"
+       stroke="#6f7883"
+       stroke-width="2"
+       id="rect35" />
+    <rect
+       x="390"
+       y="190"
+       width="220"
+       height="100"
+       rx="6"
+       fill="#0b0d10"
+       id="rect36" />
+    <rect
+       x="394"
+       y="193"
+       width="212"
+       height="5"
+       fill="#ffffff"
+       fill-opacity="0.10"
+       id="rect37" />
+    <rect
+       x="408"
+       y="214"
+       width="176"
+       height="26"
+       rx="3"
+       fill="url(#blue)"
+       id="rect38" />
+    <rect
+       x="408"
+       y="238"
+       width="176"
+       height="6"
+       fill="#12457f"
+       fill-opacity="0.85"
+       id="rect39" />
+    <rect
+       x="420"
+       y="262"
+       width="24"
+       height="9"
+       rx="2"
+       fill="#cfa94f"
+       fill-opacity="0.85"
+       id="rect40" />
+    <rect
+       x="458"
+       y="262"
+       width="24"
+       height="9"
+       rx="2"
+       fill="#cfa94f"
+       fill-opacity="0.85"
+       id="rect41" />
+    <rect
+       x="496"
+       y="262"
+       width="24"
+       height="9"
+       rx="2"
+       fill="#cfa94f"
+       fill-opacity="0.85"
+       id="rect42" />
+    <rect
+       x="534"
+       y="262"
+       width="24"
+       height="9"
+       rx="2"
+       fill="#cfa94f"
+       fill-opacity="0.85"
+       id="rect43" />
+  </g>
+  <text
+     x="350"
+     y="330"
+     font-family="'DejaVu Sans'"
+     font-size="19px"
+     fill="#9fb0c4"
+     text-anchor="middle"
+     id="text43"
+     style="fill:#ffffff">The SS marking applies to every port it points at:</text>
+  <text
+     x="350"
+     y="356"
+     font-family="'DejaVu Sans'"
+     font-size="19px"
+     fill="#9fb0c4"
+     text-anchor="middle"
+     id="text44"
+     style="fill:#ffffff">both of these are SuperSpeed (USB 3.x) ports</text>
+  <!-- ══ USB 2.0 port for comparison ══ -->
+  <rect
+     x="0"
+     y="392"
+     width="760"
+     height="148"
+     rx="18"
+     fill="url(#band)"
+     stroke="#ccd6e2"
+     stroke-width="2"
+     id="rect44" />
+  <text
+     x="34"
+     y="430"
+     font-family="DejaVu Sans"
+     font-size="21"
+     font-weight="bold"
+     fill="#2b3440"
+     id="text45">USB 2.0 port (for comparison)</text>
+  <text
+     x="20.700233"
+     y="51.588802"
+     font-family="'DejaVu Sans'"
+     font-size="41.6109px"
+     font-weight="bold"
+     fill="#ffffff"
+     id="text45-9"
+     transform="scale(0.9836783,1.0165925)">USB 3.0</text>
+  <text
+     x="20.700233"
+     y="103.60243"
+     font-family="'DejaVu Sans'"
+     font-size="41.6109px"
+     font-weight="bold"
+     fill="#ffffff"
+     id="text45-10"
+     transform="scale(0.9836783,1.0165925)">port</text>
+  <text
+     x="34"
+     y="464"
+     font-family="DejaVu Sans"
+     font-size="17"
+     fill="#4a5563"
+     id="text46">• no SS marking next to the connector</text>
+  <text
+     x="34"
+     y="492"
+     font-family="DejaVu Sans"
+     font-size="17"
+     fill="#4a5563"
+     id="text47">• black insert instead of blue</text>
+  <text
+     x="34"
+     y="520"
+     font-family="DejaVu Sans"
+     font-size="17"
+     fill="#4a5563"
+     id="text48">• negotiates 480 Mbps (High Speed), not 5 Gbps</text>
+  <g
+     id="g55">
+    <rect
+       x="470"
+       y="406"
+       width="240"
+       height="120"
+       rx="12"
+       fill="url(#shell)"
+       stroke="#6f7883"
+       stroke-width="2"
+       id="rect48" />
+    <rect
+       x="480"
+       y="416"
+       width="220"
+       height="100"
+       rx="6"
+       fill="#0b0d10"
+       id="rect49" />
+    <rect
+       x="484"
+       y="419"
+       width="212"
+       height="5"
+       fill="#ffffff"
+       fill-opacity="0.10"
+       id="rect50" />
+    <rect
+       x="498"
+       y="440"
+       width="176"
+       height="26"
+       rx="3"
+       fill="#1b1f24"
+       id="rect51" />
+    <rect
+       x="510"
+       y="488"
+       width="24"
+       height="9"
+       rx="2"
+       fill="#8d939b"
+       id="rect52" />
+    <rect
+       x="548"
+       y="488"
+       width="24"
+       height="9"
+       rx="2"
+       fill="#8d939b"
+       id="rect53" />
+    <rect
+       x="586"
+       y="488"
+       width="24"
+       height="9"
+       rx="2"
+       fill="#8d939b"
+       id="rect54" />
+    <rect
+       x="624"
+       y="488"
+       width="24"
+       height="9"
+       rx="2"
+       fill="#8d939b"
+       id="rect55" />
+  </g>
+</svg>

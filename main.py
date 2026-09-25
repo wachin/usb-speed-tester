@@ -20,16 +20,31 @@ import psutil
 import pyudev
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QComboBox, QPushButton, QCheckBox, QTextEdit, QProgressBar,
+    QComboBox, QPushButton, QCheckBox, QTextEdit, QTextBrowser, QProgressBar,
     QTabWidget, QGroupBox, QLabel, QLineEdit, QMessageBox,
     QHeaderView, QTreeWidget, QTreeWidgetItem, QAbstractItemView,
     QSplitter, QFrame, QSizePolicy, QFileDialog,
 )
 from PyQt6.QtCore import (
     QThread, pyqtSignal, pyqtSlot, QObject, QCoreApplication,
-    QTranslator, QLocale, QLibraryInfo, QTimer, Qt,
+    QTranslator, QLocale, QLibraryInfo, QTimer, Qt, QUrl,
 )
-from PyQt6.QtGui import QFont, QTextCursor, QIcon, QAction
+from PyQt6.QtGui import (
+    QFont, QTextCursor, QIcon, QAction, QImage, QPainter, QTextDocument,
+    QTextImageFormat,
+)
+
+try:  # QtSvg is used only as a fallback image loader for the SVG diagrams.
+    from PyQt6.QtSvg import QSvgRenderer
+except ImportError:  # pragma: no cover - depends on how PyQt6 was packaged
+    QSvgRenderer = None
+
+
+# ─── Asset paths ────────────────────────────────────────
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+ASSETS_DIR = os.path.join(APP_DIR, "assets")
+DIAGRAMS_PNG_DIR = os.path.join(ASSETS_DIR, "png")
+DIAGRAMS_SVG_DIR = os.path.join(ASSETS_DIR, "svg")
 
 
 # ─── i18n ───────────────────────────────────────────────
@@ -462,6 +477,272 @@ class DeviceMonitor(QThread):
         self._running = False
 
 
+# ─── Rich Analysis View (Markdown + diagrams) ───────────
+def load_diagram_image(path: str, scale: float = 1.0, file_scale: float = 1.0):
+    """Decode a diagram into ``(QImage, logical_width, logical_height)``.
+
+    The image is returned at *scale* times the layout size so it stays sharp on
+    HiDPI screens, while the logical size stays what the document layout uses.
+
+    * A ``.svg`` source is rasterised on the fly at that resolution.
+    * A raster file authored at *file_scale* (a ``name@2x.png`` variant) is
+      smoothly resampled only when its resolution differs from *scale*.
+
+    ``QSvgRenderer`` is preferred over the Qt SVG image-format plugin because
+    the latter is not guaranteed to be installed.
+    """
+    if not path or not os.path.exists(path):
+        return QImage(), 0.0, 0.0
+
+    if path.lower().endswith(".svg") and QSvgRenderer is not None:
+        renderer = QSvgRenderer(path)
+        if renderer.isValid():
+            size = renderer.defaultSize()
+            if size.isValid() and size.width() > 0 and size.height() > 0:
+                width, height = float(size.width()), float(size.height())
+                image = QImage(
+                    max(1, round(width * scale)),
+                    max(1, round(height * scale)),
+                    QImage.Format.Format_ARGB32_Premultiplied,
+                )
+                image.fill(Qt.GlobalColor.transparent)
+                painter = QPainter(image)
+                painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+                painter.setRenderHint(QPainter.RenderHint.TextAntialiasing, True)
+                renderer.render(painter)
+                painter.end()
+                return image, width, height
+
+    image = QImage(path)
+    if image.isNull():
+        return QImage(), 0.0, 0.0
+    file_scale = file_scale if file_scale > 0 else 1.0
+    width = image.width() / file_scale
+    height = image.height() / file_scale
+    wanted = (max(1, round(width * scale)), max(1, round(height * scale)))
+    if wanted != (image.width(), image.height()):
+        image = image.scaled(
+            wanted[0], wanted[1],
+            Qt.AspectRatioMode.IgnoreAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+    return image, width, height
+
+
+class AnalysisDocument(QTextDocument):
+    """Text document that resolves the relative image paths used in Markdown.
+
+    ``QTextBrowser`` on its own does not paint our diagrams, so the resource
+    loader lives on the document; every decoded image is cached, at a
+    resolution that follows the screen's device pixel ratio.
+
+    The Markdown refers to the generated PNGs (``assets/png/name.png``). When
+    several ``name@2x.png`` / ``name@3x.png`` variants exist, the smallest one
+    that still covers the screen's pixel ratio is used — otherwise the image
+    would be blown up and look soft. If no raster exists at all, the SVG source
+    of the same name is rasterised instead.
+    """
+
+    _VARIANT_RE = re.compile(r"^(?P<stem>.+?)@(?P<scale>\d+(?:\.\d+)?)x$")
+
+    def __init__(self, base_dir: str, parent=None, render_scale: float = 1.0):
+        super().__init__(parent)
+        self._base_dir = base_dir
+        self._render_scale = max(1.0, float(render_scale))
+        self._images: dict = {}
+        self._logical: dict = {}
+        self._variant_cache: dict = {}
+        self.setBaseUrl(QUrl.fromLocalFile(base_dir + os.sep))
+
+    def set_render_scale(self, scale: float) -> bool:
+        """Follow a device-pixel-ratio change; True if the cache was dropped."""
+        scale = max(1.0, float(scale))
+        if abs(scale - self._render_scale) < 0.01:
+            return False
+        self._render_scale = scale
+        self._images.clear()
+        self._logical.clear()
+        return True
+
+    def _local_path(self, name) -> str:
+        """Turn a document URL (absolute or relative) into a filesystem path."""
+        text = name.toString() if isinstance(name, QUrl) else str(name)
+        if text.startswith("file:"):
+            path = QUrl(text).toLocalFile()
+        elif text.startswith("/"):
+            path = text
+        else:
+            path = os.path.join(self._base_dir, text)
+        return os.path.normpath(path)
+
+    def _variants(self, directory: str) -> dict:
+        """``{stem: {scale: path}}`` for the ``stem@Nx.ext`` files in a folder."""
+        if directory not in self._variant_cache:
+            index: dict = {}
+            try:
+                names = os.listdir(directory)
+            except OSError:
+                names = []
+            for name in names:
+                stem, _ext = os.path.splitext(name)
+                match = self._VARIANT_RE.match(stem)
+                if match:
+                    index.setdefault(match.group("stem"), {})[
+                        float(match.group("scale"))
+                    ] = os.path.join(directory, name)
+                else:
+                    index.setdefault(stem, {})[1.0] = os.path.join(directory, name)
+            self._variant_cache[directory] = index
+        return self._variant_cache[directory]
+
+    def _resolve(self, path: str):
+        """Pick the file to use for *path*; ``(file, file_scale)`` or ``None``."""
+        directory, filename = os.path.split(path)
+        stem, _ext = os.path.splitext(filename)
+        variants = self._variants(directory).get(stem, {})
+        if variants:
+            available = sorted(variants)
+            wide_enough = [s for s in available if s >= self._render_scale]
+            scale = min(wide_enough) if wide_enough else max(available)
+            return variants[scale], scale
+        vector = os.path.join(DIAGRAMS_SVG_DIR, stem + ".svg")
+        if os.path.exists(vector):
+            return vector, 0.0
+        return None, 0.0
+
+    def image(self, name) -> QImage:
+        """Return the decoded image for *name*, reading the file only once."""
+        path = self._local_path(name)
+        if path not in self._images:
+            source, file_scale = self._resolve(path)
+            if source is None:
+                self._images[path] = QImage()
+                self._logical[path] = (0.0, 0.0)
+            else:
+                image, width, height = load_diagram_image(
+                    source, self._render_scale, file_scale
+                )
+                self._images[path] = image
+                self._logical[path] = (width, height)
+        return self._images[path]
+
+    def logical_size(self, name):
+        """Size of *name* in layout units (independent of the render scale)."""
+        self.image(name)
+        return self._logical.get(self._local_path(name), (0.0, 0.0))
+
+    def loadResource(self, type_, name):
+        if type_ == QTextDocument.ResourceType.ImageResource.value:
+            image = self.image(name)
+            if not image.isNull():
+                return image
+        return super().loadResource(type_, name)
+
+
+class AnalysisView(QTextBrowser):
+    """Read-only view that renders the User Analysis as Markdown.
+
+    Supports headings, lists, quotes and images. Diagrams are scaled down to
+    the current viewport width so they always fit, whatever the window size.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._markdown = ""
+        self._fitting = False
+        self._analysis_document = AnalysisDocument(
+            APP_DIR, self, render_scale=self._screen_scale()
+        )
+        self.setDocument(self._analysis_document)
+        self.setOpenExternalLinks(True)
+        self.setFrameShape(QFrame.Shape.NoFrame)
+        self.setFont(QFont("SansSerif", 10))
+
+    @staticmethod
+    def _screen_scale() -> float:
+        """Device pixel ratio of the screen, so SVG diagrams stay sharp."""
+        screen = QApplication.primaryScreen()
+        return float(screen.devicePixelRatio()) if screen else 1.0
+
+    # ── content ──────────────────────────────────────────
+    def clear_analysis(self):
+        """Drop the rendered Markdown and start a fresh document."""
+        self._markdown = ""
+        self._analysis_document.clear()
+        self._analysis_document.setBaseUrl(QUrl.fromLocalFile(APP_DIR + os.sep))
+
+    def append_markdown(self, text: str):
+        """Append a Markdown block and re-render, keeping the reading position."""
+        had_content = bool(self._markdown.strip())
+        self._markdown = f"{self._markdown}\n\n{text}" if had_content else text
+        scroll = self.verticalScrollBar()
+        previous = scroll.value()
+        was_at_bottom = previous >= scroll.maximum() - 4
+        self._analysis_document.setMarkdown(self._markdown)
+        self._fit_images()
+        if not had_content:
+            scroll.setValue(0)
+        elif was_at_bottom:
+            scroll.setValue(scroll.maximum())
+        else:
+            scroll.setValue(min(previous, scroll.maximum()))
+
+    def markdown(self) -> str:
+        return self._markdown
+
+    # ── layout ───────────────────────────────────────────
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._fit_images()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._fit_images()
+
+    def _fit_images(self):
+        """Scale every diagram so it never overflows the viewport width."""
+        if self._fitting:
+            return
+        self._fitting = True
+        try:
+            if self._analysis_document.set_render_scale(self.devicePixelRatioF()):
+                # Screen changed: re-rasterise the SVGs at the new pixel ratio.
+                self._analysis_document.setMarkdown(self._markdown)
+            available = max(self.viewport().width() - 30, 160)
+            cursor = QTextCursor(self._analysis_document)
+            cursor.beginEditBlock()
+            block = self._analysis_document.begin()
+            while block.isValid():
+                fragment = block.begin()
+                while not fragment.atEnd():
+                    piece = fragment.fragment()
+                    if piece.isValid() and piece.charFormat().isImageFormat():
+                        image_format = piece.charFormat().toImageFormat()
+                        width, height = self._analysis_document.logical_size(
+                            image_format.name()
+                        )
+                        if width > 0:
+                            target_width = min(width, available)
+                            target_height = height * target_width / width
+                            if (abs(image_format.width() - target_width) > 0.5
+                                    or abs(image_format.height() - target_height) > 0.5):
+                                scaled = QTextImageFormat()
+                                scaled.setName(image_format.name())
+                                scaled.setWidth(target_width)
+                                scaled.setHeight(target_height)
+                                cursor.setPosition(piece.position())
+                                cursor.setPosition(
+                                    piece.position() + piece.length(),
+                                    QTextCursor.MoveMode.KeepAnchor,
+                                )
+                                cursor.mergeCharFormat(scaled)
+                    fragment += 1
+                block = block.next()
+            cursor.endEditBlock()
+        finally:
+            self._fitting = False
+
+
 # ─── Main Window ────────────────────────────────────────
 class MainWindow(QMainWindow):
     """Main application window for USB speed testing."""
@@ -533,11 +814,9 @@ class MainWindow(QMainWindow):
         self.log_edit = QTextEdit()
         self.log_edit.setReadOnly(True)
         self.log_edit.setFont(QFont("Monospace", 9))
-        self.analysis_edit = QTextEdit()
-        self.analysis_edit.setReadOnly(True)
-        self.analysis_edit.setFont(QFont("SansSerif", 10))
+        self.analysis_view = AnalysisView()
         self.tabs.addTab(self.log_edit, self.tr("Technical Log"))
-        self.tabs.addTab(self.analysis_edit, self.tr("User Analysis"))
+        self.tabs.addTab(self.analysis_view, self.tr("User Analysis"))
         layout.addWidget(self.tabs)
 
         # Status bar
@@ -699,7 +978,7 @@ class MainWindow(QMainWindow):
                                     self.tr("Please select a USB device"))
             return
         self.log_edit.clear()
-        self.analysis_edit.clear()
+        self.analysis_view.clear_analysis()
         self.progress.setValue(0)
         tests = []
         if self.cb_bus.isChecked():
@@ -741,12 +1020,63 @@ class MainWindow(QMainWindow):
         worker.start()
 
     def _update_analysis(self, output: str):
-        analysis = self._interpret_output(output)
-        current = self.analysis_edit.toPlainText()
-        self.analysis_edit.setText(current + "\n" + analysis)
+        """Queue the Markdown interpretation for the User Analysis tab.
+
+        The document rebuild (``setMarkdown``) loads image resources and runs a
+        full re-layout. Doing that *inside* the ``finished`` slot is unsafe: the
+        slot is reached through a queued connection from the worker thread, and
+        mutating the document re-entrantly while Qt is still dispatching that
+        signal corrupts PyQt's slot dispatch, which aborts the process with a
+        bogus TypeError about the next connected slot. Rendering on the next
+        event-loop turn keeps the document work outside the signal handler.
+        """
+        markdown = self._interpret_output(output)
+        QTimer.singleShot(0, lambda: self.analysis_view.append_markdown(markdown))
+
+    def _superspeed_marking_markdown(self) -> str:
+        """Diagrams that teach the user how to spot an 'SS' SuperSpeed port."""
+        return "\n\n".join([
+            self.tr(
+                "> **How to recognise that port on your laptop:** USB 3.x ports "
+                "are labelled with the letters **SS** (for *SuperSpeed*), printed "
+                "or engraved just a few millimetres from the connector, usually "
+                "next to the USB trident logo. That `SS` is the marking that "
+                "tells you the port can negotiate **5 Gbps (5000M)** instead of "
+                "the 480 Mbps of a USB 2.0 port."
+            ),
+            self.tr("### The three SuperSpeed markings to look for"),
+            self.tr(
+                "**1. The SS + USB trident logo** — the exact symbol silkscreened "
+                "on the chassis, the plastic or the port itself. On many laptops "
+                "the plastic tongue inside the port is also **blue**.\n\n"
+                "![SS + USB trident SuperSpeed logo](assets/png/usb3-ss-logo.png)"
+            ),
+            self.tr(
+                "**2. Several ports sharing one marking** — the SS symbol with an "
+                "arrow bracket means *every* port the bracket points at is "
+                "SuperSpeed. Blue insert = USB 3.x, black insert = USB 2.0 only.\n\n"
+                "![Two blue SuperSpeed ports marked with the SS symbol]"
+                "(assets/png/usb3-ss-ports.png)"
+            ),
+            self.tr(
+                "**3. Check the side of your own laptop** — the marking sits a few "
+                "millimetres from the connector. If the bus analysis reports "
+                "`480M`, you are probably plugged into a port with no `SS` "
+                "marking, or into a USB 2.0 hub.\n\n"
+                "![SS marking engraved next to a laptop USB port]"
+                "(assets/png/usb3-ss-laptop.png)"
+            ),
+            self.tr(
+                "> **Summary:** `SS` next to the port = SuperSpeed (USB 3.x, "
+                "5 Gbps). No `SS` marking and a black insert = USB 2.0 "
+                "(480 Mbps) only."
+            ),
+        ])
 
     def _interpret_output(self, output: str) -> str:
-        lines = []
+        """Turn raw command output into Markdown for the User Analysis tab."""
+        bullets: List[str] = []
+        blocks: List[str] = []
         out_lower = output.lower()
         
         # hdparm analysis
@@ -757,13 +1087,13 @@ class MainWindow(QMainWindow):
                 cached_val = float(cached_match.group(1))
                 real_val = float(real_match.group(1))
                 if real_val < 40:
-                    lines.append(self.tr("Physical read speed is %.1f MB/s — typical for USB 2.0. "
-                                         "If this is a USB 3.0 device, check the port/cable.") % real_val)
+                    bullets.append(self.tr("Physical read speed is %.1f MB/s — typical for USB 2.0. "
+                                           "If this is a USB 3.0 device, check the port/cable.") % real_val)
                 elif real_val < 100:
-                    lines.append(self.tr("Physical read speed is %.1f MB/s — consistent with USB 3.0 "
-                                         "but limited by the flash chip (common for consumer drives).") % real_val)
+                    bullets.append(self.tr("Physical read speed is %.1f MB/s — consistent with USB 3.0 "
+                                           "but limited by the flash chip (common for consumer drives).") % real_val)
                 else:
-                    lines.append(self.tr("Excellent physical read speed: %.1f MB/s — high-end USB 3.x device.") % real_val)
+                    bullets.append(self.tr("Excellent physical read speed: %.1f MB/s — high-end USB 3.x device.") % real_val)
 
         # fio analysis
         if "seqread" in out_lower or "randread4k" in out_lower or "randwrite4k" in out_lower:
@@ -775,47 +1105,55 @@ class MainWindow(QMainWindow):
             if read_bw:
                 bw = float(read_bw.group(1))
                 if bw > 100:
-                    lines.append(self.tr("Sequential read: %.1f MB/s — good USB 3.x performance.") % bw)
+                    bullets.append(self.tr("Sequential read: %.1f MB/s — good USB 3.x performance.") % bw)
                 elif bw > 30:
-                    lines.append(self.tr("Sequential read: %.1f MB/s — USB 2.0 speeds detected.") % bw)
+                    bullets.append(self.tr("Sequential read: %.1f MB/s — USB 2.0 speeds detected.") % bw)
             if write_bw:
                 bw = float(write_bw.group(1))
-                lines.append(self.tr("Sequential write: %.1f MB/s — typical for USB flash (no DRAM cache).") % bw)
+                bullets.append(self.tr("Sequential write: %.1f MB/s — typical for USB flash (no DRAM cache).") % bw)
             if rand_read_iops:
                 iops = int(rand_read_iops.group(1))
                 if iops < 1000:
-                    lines.append(self.tr("Random 4K read: %d IOPS — low, flash controller bottleneck.") % iops)
+                    bullets.append(self.tr("Random 4K read: %d IOPS — low, flash controller bottleneck.") % iops)
                 else:
-                    lines.append(self.tr("Random 4K read: %d IOPS — decent.") % iops)
+                    bullets.append(self.tr("Random 4K read: %d IOPS — decent.") % iops)
             if rand_write_iops:
                 iops = int(rand_write_iops.group(1))
                 if iops < 500:
-                    lines.append(self.tr("Random 4K write: %d IOPS — very low, typical for cheap flash.") % iops)
+                    bullets.append(self.tr("Random 4K write: %d IOPS — very low, typical for cheap flash.") % iops)
                 else:
-                    lines.append(self.tr("Random 4K write: %d IOPS — acceptable.") % iops)
+                    bullets.append(self.tr("Random 4K write: %d IOPS — acceptable.") % iops)
 
         # smartctl analysis
         if "smartctl" in out_lower:
             if "unknown usb bridge" in out_lower or "not supported" in out_lower:
-                lines.append(self.tr("SMART not supported via USB bridge — normal for flash drives. "
-                                     "Use vendor tools for health info."))
+                bullets.append(self.tr("SMART not supported via USB bridge — normal for flash drives. "
+                                       "Use vendor tools for health info."))
             elif "reallocated" in out_lower or "pending" in out_lower:
-                lines.append(self.tr("Warning: Reallocated/pending sectors — backup data immediately."))
+                bullets.append(self.tr("Warning: Reallocated/pending sectors — backup data immediately."))
             elif "passed" in out_lower or "healthy" in out_lower:
-                lines.append(self.tr("SMART health check passed."))
+                bullets.append(self.tr("SMART health check passed."))
 
         # lsusb analysis
         if "mass storage" in out_lower:
             if "5000M" in output:
-                lines.append(self.tr("USB 3.x link negotiated (5000M) — device connected at SuperSpeed."))
+                bullets.append(self.tr("USB 3.x link negotiated (5000M) — device connected at SuperSpeed."))
+                bullets.append(self.tr("Look for the **SS** marking next to the port you used — "
+                                       "the diagrams below show where it is."))
+                blocks.append(self._superspeed_marking_markdown())
             elif "480M" in output:
-                lines.append(self.tr("USB 2.0 link only (480M) — check port, cable, or device compatibility."))
+                bullets.append(self.tr("USB 2.0 link only (480M) — check port, cable, or device compatibility."))
+                bullets.append(self.tr("USB 3.x ports are marked with **SS** (SuperSpeed) a few "
+                                       "millimetres from the connector: if the port you used has no "
+                                       "**SS**, it is a USB 2.0 port."))
             else:
-                lines.append(self.tr("USB mass storage detected but link speed unknown."))
+                bullets.append(self.tr("USB mass storage detected but link speed unknown."))
 
-        if not lines:
-            lines.append(self.tr("No specific analysis available. Check the Technical Log for details."))
-        return "\n".join(lines)
+        parts = [f"- {bullet}" for bullet in bullets]
+        parts.extend(blocks)
+        if not parts:
+            parts.append(self.tr("No specific analysis available. Check the Technical Log for details."))
+        return "\n\n".join(parts)
 
     def closeEvent(self, event):
         self.monitor.stop()

@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  SuperSpeed (SS) emblem - USB 3.x
+  Vector illustration used by the "User Analysis" tab of USB Speed Tester.
+  Concept: the letters "SS" (SuperSpeed) next to the USB trident logo,
+  the exact marking printed or engraved beside a USB 3.x port.
+-->
+
+<svg
+   width="560"
+   height="340"
+   viewBox="0 0 560 340"
+   version="1.1"
+   id="svg11"
+   sodipodi:docname="usb3-ss-logo.svg"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview11"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.0627399"
+     inkscape:cx="197.60244"
+     inkscape:cy="191.48618"
+     inkscape:window-width="1360"
+     inkscape:window-height="713"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg11" />
+  <defs
+     id="defs4">
+    <linearGradient
+       id="card"
+       x1="0"
+       y1="0"
+       x2="0"
+       y2="1">
+      <stop
+         offset="0"
+         stop-color="#ffffff"
+         id="stop1" />
+      <stop
+         offset="1"
+         stop-color="#eaeff6"
+         id="stop2" />
+    </linearGradient>
+    <linearGradient
+       id="inkGrad"
+       x1="0"
+       y1="0"
+       x2="0"
+       y2="1">
+      <stop
+         offset="0"
+         stop-color="#2b3440"
+         id="stop3" />
+      <stop
+         offset="1"
+         stop-color="#0b0f14"
+         id="stop4" />
+    </linearGradient>
+  </defs>
+  <rect
+     x="1.5"
+     y="1.5"
+     width="557"
+     height="337"
+     rx="20"
+     fill="url(#card)"
+     stroke="#c6d1e0"
+     stroke-width="3"
+     id="rect4" />
+  <!-- "SS" = SuperSpeed, drawn behind the trident so the logo stays readable -->
+  <text
+     x="46"
+     y="196"
+     font-family="DejaVu Sans"
+     font-size="150"
+     font-weight="bold"
+     fill="#0d1117"
+     letter-spacing="-4"
+     id="text4">SS</text>
+  <!-- USB trident: white halo drawn first, black artwork on top -->
+  <g
+     fill="none"
+     stroke="#ffffff"
+     stroke-width="30"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="g6">
+    <path
+       d="M138 160 H448"
+       id="path4" />
+    <path
+       d="M248 160 L306 102 H342"
+       id="path5" />
+    <path
+       d="M290 160 L348 218 H388"
+       id="path6" />
+  </g>
+  <g
+     fill="#ffffff"
+     stroke="#ffffff"
+     stroke-width="8"
+     id="g7">
+    <circle
+       cx="138"
+       cy="160"
+       r="22"
+       id="circle6" />
+    <circle
+       cx="356"
+       cy="102"
+       r="23"
+       id="circle7" />
+    <rect
+       x="382"
+       y="191"
+       width="44"
+       height="44"
+       rx="4"
+       id="rect7" />
+    <polygon
+       points="442,138 498,160 442,182"
+       id="polygon7" />
+  </g>
+  <g
+     fill="none"
+     stroke="url(#inkGrad)"
+     stroke-width="17"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="g9">
+    <path
+       d="M138 160 H446"
+       id="path7" />
+    <path
+       d="M248 160 L306 102 H342"
+       id="path8" />
+    <path
+       d="M290 160 L348 218 H388"
+       id="path9" />
+  </g>
+  <g
+     fill="#0d1117"
+     id="g10">
+    <circle
+       cx="138"
+       cy="160"
+       r="16"
+       id="circle9" />
+    <circle
+       cx="356"
+       cy="102"
+       r="17"
+       id="circle10" />
+    <rect
+       x="388"
+       y="197"
+       width="34"
+       height="34"
+       rx="3"
+       id="rect10" />
+    <polygon
+       points="446,146 488,160 446,174"
+       id="polygon10" />
+  </g>
+  <!-- Labels -->
+  <text
+     x="280"
+     y="290"
+     font-family="DejaVu Sans"
+     font-size="46"
+     font-weight="bold"
+     fill="#c62828"
+     text-anchor="middle"
+     id="text10"
+     style="fill:#ff0000">USB 3.0</text>
+  <text
+     x="280"
+     y="322"
+     font-family="DejaVu Sans"
+     font-size="21"
+     fill="#5b6675"
+     text-anchor="middle"
+     id="text11">SS = SuperSpeed</text>
+</svg>

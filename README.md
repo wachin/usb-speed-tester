@@ -20,6 +20,8 @@ A PyQt6 desktop application for analyzing, benchmarking, and diagnosing USB stor
 | **Advanced fio Benchmark** | Sequential + 4K random read/write with IOPS, latency, and throughput |
 | **SMART Health** | Runs `smartctl -a` (via `pkexec`) for device health diagnostics |
 | **Dual Output Panels** | Technical Log (raw output) + User Analysis (plain-language interpretation) |
+| **Markdown Analysis** | User Analysis is rendered as Markdown/rich text (headings, lists, quotes, tables) |
+| **Inline Diagrams** | Explains the `SS` (SuperSpeed) port marking with diagrams that scale to the window |
 | **Progress Tracking** | Real-time progress bar for long-running tests |
 | **Internationalization** | All UI strings in English with `QTranslator` support for Spanish |
 
@@ -83,12 +85,50 @@ python3 main.py
 ```
 usb-speed-tester/
 ├── main.py              # Complete application (single-file for simplicity)
+├── assets/
+│   ├── svg/             # Editable vector sources of the diagrams
+│   │   ├── usb3-ss-logo.svg      # SS + USB trident SuperSpeed emblem
+│   │   ├── usb3-ss-ports.svg     # Two SS ports vs. a USB 2.0 port
+│   │   └── usb3-ss-laptop.svg    # SS marking engraved next to a laptop port
+│   └── png/             # Generated PNGs actually shown by the application
+│       ├── usb3-ss-logo@2x.png
+│       ├── usb3-ss-ports@2x.png
+│       └── usb3-ss-laptop@2x.png
+├── tools/
+│   └── svg_to_png.py    # Regenerates assets/png/ from assets/svg/
 ├── .gitignore
 ├── LICENSE
 ├── README.md
 └── translations/        # .qm translation files (generated from .ts)
     └── usbtester_es.qm  # Spanish translation example
 ```
+
+## Diagrams
+
+The **User Analysis** tab embeds three diagrams that explain where the `SS`
+(SuperSpeed) marking sits on a laptop or PC. They are drawn as SVG and shipped
+as PNG, because a PNG carries its own glyphs: the labels can never shift or
+disappear because a font is missing on the machine running the program.
+
+Edit the SVG sources, then regenerate the PNGs:
+
+```bash
+python3 tools/svg_to_png.py              # all diagrams, 2x for HiDPI screens
+python3 tools/svg_to_png.py --list       # preview without writing anything
+python3 tools/svg_to_png.py --scale 3    # even sharper, larger files
+python3 tools/svg_to_png.py usb3-ss-logo.svg   # just one diagram
+python3 tools/svg_to_png.py --clean      # drop stale PNGs first
+```
+
+Files are written as `name.png` for `--scale 1` and `name@2x.png` for larger
+scales. At runtime the application picks the smallest variant that still
+covers the screen's device pixel ratio, and falls back to the SVG source if no
+PNG has been generated yet.
+
+> **Tip:** QtSvg (used both by the converter and by that fallback) does not
+> implement every SVG feature. In particular it ignores `<tspan>` elements that
+> carry their own `y` coordinate, so a multi-line text block written by Inkscape
+> collapses into a single line. Give each line its own `<text>` element.
 
 ## Internationalization (i18n)
 

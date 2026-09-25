@@ -77,6 +77,10 @@ pip install -r requirements.txt
 python3 main.py
 ```
 
+The interface follows your desktop language (Spanish and English ship today).
+To start it in a specific language, see
+[Testing another language from the terminal](#testing-another-language-from-the-terminal).
+
 ![](images/01-usb-speed-tester.png)
 
 1. Select a USB device from the dropdown
@@ -206,6 +210,34 @@ python3 tools/svg_to_png.py      # gives tutorial/FR its diagrams
 Re-running `pylupdate6` on an existing `.ts` merges the new strings and keeps
 the translations you already made, so it is safe to repeat after editing
 `main.py`.
+
+### Testing another language from the terminal
+
+The interface, the tutorial and the About box all follow the system locale, so
+you can try any language without touching the code:
+
+```bash
+# Run in English, whatever your desktop language is
+LANGUAGE=en python3 main.py
+
+# Back to your normal language
+python3 main.py
+```
+
+> **Important:** use `LANGUAGE`, not `LANG`. Qt gives `LANGUAGE` priority over
+> `LANG` and `LC_ALL`, and many desktops export a `LANGUAGE` value
+> (for example `LANGUAGE=es_EC:es`), so overriding only `LANG` has no effect.
+
+| Command | Locale seen by the app |
+|---------|------------------------|
+| `python3 main.py` | your desktop locale, e.g. `es_EC` |
+| `LANGUAGE=en python3 main.py` | `en_US` |
+| `LANGUAGE=en_US.UTF-8 python3 main.py` | `en_US` |
+| `LC_ALL=C LANG=C python3 main.py` | `C` (also English) |
+
+English is the language the strings are written in, so there is no
+`usbtester_en.qm`: with an English locale no translator is installed at all and
+the Qt standard buttons (*Close*, *Cancel*) also stay in English.
 
 ## Architecture
 

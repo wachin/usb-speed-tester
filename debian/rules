@@ -1,0 +1,15 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+# The upstream Makefile already knows the complete installation layout, so the
+# Debian build reuses it instead of duplicating paths in .install files. That
+# also guarantees "make install" and the package put files in the same places.
+# PREFIX must be /usr here: Debian packages may not install into /usr/local.
+override_dh_auto_install:
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/usb-speed-tester PREFIX=/usr
+
+override_dh_auto_clean:
+	$(MAKE) clean
+	rm -rf .pytest_cache

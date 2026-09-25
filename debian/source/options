@@ -1,0 +1,4 @@
+# The compiled .qm files are shipped upstream but regenerated from the .ts
+# catalogues during the build; lrelease may produce byte-different output, so
+# keep that out of the generated Debian diff.
+extend-diff-ignore = "(^|/)translations/.*[.]qm$"

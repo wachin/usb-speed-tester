@@ -1,0 +1,43 @@
+Source: usb-speed-tester
+Section: utils
+Priority: optional
+Maintainer: Washington Indacochea Delgado <linuxfrontier@proton.me>
+Build-Depends: debhelper-compat (= 13),
+               dh-sequence-python3,
+               python3,
+               qt6-l10n-tools
+Rules-Requires-Root: no
+Standards-Version: 4.7.4
+Homepage: https://github.com/wachin/usb-speed-tester
+Vcs-Browser: https://github.com/wachin/usb-speed-tester
+Vcs-Git: https://github.com/wachin/usb-speed-tester.git
+
+Package: usb-speed-tester
+Architecture: all
+Depends: ${misc:Depends},
+         ${python3:Depends},
+         python3-pyqt6,
+         python3-pyqt6.qtsvg,
+         python3-pyudev,
+         python3-psutil,
+         usbutils,
+         hdparm,
+         fio,
+         smartmontools,
+         pkexec
+Description: graphical analyser and benchmark for USB storage devices
+ USB Speed Tester is a PyQt6 desktop application that runs the usual Linux
+ USB diagnostic tools and explains their output in plain language. It reports
+ the negotiated link speed of the bus (5000M for USB 3.x, 480M for USB 2.0),
+ cached and physical read speed with hdparm, real write speed with dd,
+ sequential and 4K random throughput and IOPS with fio, and SMART health data
+ with smartctl whenever the USB bridge forwards it.
+ .
+ Results are shown in a technical log with the raw command output next to a
+ user analysis that says what the numbers mean in practice, for example
+ whether a slow pendrive is limited by the port or by the flash chip itself.
+ .
+ An illustrated tutorial explains how to recognise a real USB 3.x SuperSpeed
+ port by the SS marking printed a few millimetres from the connector. The
+ interface, the tutorial and the About box are available in English and
+ Spanish.

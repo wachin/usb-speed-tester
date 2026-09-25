@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=USB Speed Tester
+Name[es]=Analizador de velocidad USB
+GenericName=USB diagnostics
+GenericName[es]=Diagnóstico de USB
+Comment=Analyse, benchmark and diagnose USB storage devices
+Comment[es]=Analiza, mide y diagnostica dispositivos de almacenamiento USB
+Exec=usb-speed-tester
+Icon=io.github.wachin.USBSpeedTester
+Terminal=false
+Categories=Utility;Filesystem;
+Keywords=USB;flash;drive;benchmark;speed;SuperSpeed;storage;
+Keywords[es]=USB;pendrive;benchmark;velocidad;SuperSpeed;almacenamiento;
+StartupNotify=true

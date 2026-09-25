@@ -104,6 +104,7 @@ To start it in a specific language, see
 ```
 usb-speed-tester/
 ├── main.py              # Complete application (single-file for simplicity)
+├── Makefile             # translation/install/uninstall/clean/check targets
 ├── assets/
 │   ├── svg/             # Editable vector sources of the tutorial diagrams
 │   │   ├── usb3-ss-logo.svg      # SS + USB trident SuperSpeed emblem
@@ -119,6 +120,11 @@ usb-speed-tester/
 │   └── ES/
 │       ├── tutorial.md           # Spanish translation
 │       └── usb3-ss-*.png
+├── data/                # Files installed outside the program directory
+│   ├── io.github.wachin.USBSpeedTester.desktop
+│   ├── io.github.wachin.USBSpeedTester.metainfo.xml
+│   └── usb-speed-tester.1        # Manual page
+├── debian/              # Debian source package (see "Debian packaging")
 ├── tools/
 │   └── svg_to_png.py    # Regenerates every PNG above from the SVG sources
 ├── .gitignore
@@ -128,6 +134,12 @@ usb-speed-tester/
     ├── usbtester_es.ts  # Spanish source (editable)
     └── usbtester_es.qm  # Spanish compiled (loaded at runtime)
 ```
+
+At runtime the program looks for `assets/`, `tutorial/` and `translations/`
+next to itself, then in `../share/usb-speed-tester`, then in
+`/usr/local/share/usb-speed-tester` and `/usr/share/usb-speed-tester`. Set
+`USB_SPEED_TESTER_DATA` to override the search. This is what lets the same
+source tree work as a checkout, as a `make install` and as a Debian package.
 
 ## Tutorial (Explanations tab)
 
@@ -256,6 +268,54 @@ All workers inherit from `BaseTestWorker` which provides:
 - `finished` signal (device_id, output)
 - `error` signal (message)
 - Cancellation support
+
+## Debian packaging
+
+The `debian/` directory holds a complete Debian source package following
+Policy 4.7.4, `debhelper` compat 13 and the DEP-5 machine-readable copyright
+format. The binary package installs:
+
+| Path | Contents |
+|------|----------|
+| `/usr/bin/usb-speed-tester` | The program |
+| `/usr/share/usb-speed-tester/` | `assets/`, `tutorial/` and `translations/` |
+| `/usr/share/applications/io.github.wachin.USBSpeedTester.desktop` | Menu entry |
+| `/usr/share/metainfo/io.github.wachin.USBSpeedTester.metainfo.xml` | AppStream metadata |
+| `/usr/share/icons/hicolor/<size>/apps/io.github.wachin.USBSpeedTester.png` | Icons (7 sizes) |
+| `/usr/share/man/man1/usb-speed-tester.1.gz` | Manual page |
+
+Build it with:
+
+```bash
+sudo apt install debhelper dh-python qt6-l10n-tools lintian devscripts
+dpkg-buildpackage -us -uc          # source + binary, output lands in ..
+lintian ../usb-speed-tester_1.0.0-1_amd64.changes
+```
+
+`debian/rules` delegates to the upstream `Makefile`, so the package and a plain
+`sudo make install` produce exactly the same layout. The compiled `.qm`
+translations are regenerated from the `.ts` catalogues during the build.
+
+### Before uploading to Debian
+
+1. **File an ITP** (Intent To Package) bug against the `wnpp` pseudo-package,
+   for example with `reportbug --kinds=wnpp`, and add its number to
+   `debian/changelog` as `* Initial release. (Closes: #1234567)`. Lintian
+   currently warns `initial-upload-closes-no-bugs` until that is done.
+2. **Tag the upstream release** so `debian/watch` can find it, for example
+   `git tag -s v1.0.0 -m "usb-speed-tester 1.0.0"`, and push the tag.
+3. **Push an `debian/latest` branch** (see `debian/gbp.conf`) if you want to
+   build with `gbp buildpackage`.
+4. **Find a sponsor**: publish the package on
+   [mentors.debian.net](https://mentors.debian.net/) and request sponsorship on
+   the `debian-mentors` mailing list.
+
+Lintian is clean apart from those two upload-time items:
+
+```
+W: initial-upload-closes-no-bugs        # fix by filing the ITP
+W: newer-standards-version 4.7.4        # trixie's lintian is older than Policy 4.7.4.1
+```
 
 ## Troubleshooting
 

@@ -1,10 +1,27 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+#
+# USB Speed Tester - analyse, benchmark and diagnose USB storage devices.
+# Copyright (C) 2026 Washington Indacochea Delgado <linuxfrontier@proton.me>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, version 3 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 USB Speed Tester - PyQt6 Application
 Bus analysis, benchmarking, and diagnostics for USB storage devices.
 All code and comments in English. Spanish translations via QTranslator.
 """
 
+import argparse
 import sys
 import os
 import subprocess
@@ -42,12 +59,61 @@ except ImportError:  # pragma: no cover - depends on how PyQt6 was packaged
 
 
 # ─── Asset paths ────────────────────────────────────────
-APP_DIR = os.path.dirname(os.path.abspath(__file__))
-ASSETS_DIR = os.path.join(APP_DIR, "assets")
+# The program can run from a source checkout, from a self-contained install or
+# from a system-wide location such as /usr/share/usb-speed-tester, so the data
+# directory is looked up instead of assumed to sit next to this file.
+PACKAGE_NAME = "usb-speed-tester"
+
+
+def _data_dir_candidates() -> List[str]:
+    """Directories that may hold assets/, tutorial/ and translations/."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.environ.get("USB_SPEED_TESTER_DATA", ""),
+        os.path.join(here, "share", PACKAGE_NAME),
+        here,
+        os.path.join(sys.prefix, "share", PACKAGE_NAME),
+        os.path.join("/usr/local/share", PACKAGE_NAME),
+        os.path.join("/usr/share", PACKAGE_NAME),
+    ]
+    seen = set()
+    for candidate in candidates:
+        if candidate and candidate not in seen:
+            seen.add(candidate)
+            yield candidate
+
+
+def _find_data_dir() -> str:
+    """First candidate that actually contains the bundled data."""
+    for candidate in _data_dir_candidates():
+        if os.path.isdir(os.path.join(candidate, "tutorial")):
+            return candidate
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+DATA_DIR = _find_data_dir()
+APP_DIR = DATA_DIR                      # kept for backwards compatibility
+ASSETS_DIR = os.path.join(DATA_DIR, "assets")
 DIAGRAMS_SVG_DIR = os.path.join(ASSETS_DIR, "svg")
 ICON_DIR = os.path.join(ASSETS_DIR, "icon")
-TUTORIAL_DIR = os.path.join(APP_DIR, "tutorial")
-TRANSLATIONS_DIR = os.path.join(APP_DIR, "translations")
+TUTORIAL_DIR = os.path.join(DATA_DIR, "tutorial")
+TRANSLATIONS_DIR = os.path.join(DATA_DIR, "translations")
+
+
+def find_tool(name: str, *fallbacks: str) -> str:
+    """Locate an external command, preferring PATH over absolute fallbacks.
+
+    Distributions do not all agree on where hdparm, smartctl or pkexec live
+    (``/sbin`` versus ``/usr/sbin``, merged-/usr or not), so the PATH is asked
+    first and the historical locations are only a last resort.
+    """
+    found = shutil.which(name)
+    if found:
+        return found
+    for fallback in fallbacks:
+        if os.path.exists(fallback):
+            return fallback
+    return fallbacks[-1] if fallbacks else name
 
 ICON_NAME = "usb-speed-tester"
 ICON_SIZES = (16, 24, 32, 48, 64, 128, 256)
@@ -261,7 +327,7 @@ class BusAnalysisWorker(BaseTestWorker):
         try:
             self._emit_progress(0, self.tr("Running lsusb -t..."))
             result = subprocess.run(
-                ["/usr/bin/lsusb", "-t"],
+                [find_tool("lsusb", "/usr/bin/lsusb"), "-t"],
                 capture_output=True,
                 text=True,
                 timeout=15,
@@ -297,7 +363,9 @@ class ReadBenchmarkWorker(BaseTestWorker):
         try:
             self._emit_progress(0, self.tr("Running hdparm -tT (requires root)..."))
             result = subprocess.run(
-                ["pkexec", "/sbin/hdparm", "-tT", self.device.device_node],
+                [find_tool("pkexec", "/usr/bin/pkexec"),
+                 find_tool("hdparm", "/usr/sbin/hdparm", "/sbin/hdparm"),
+                 "-tT", self.device.device_node],
                 capture_output=True,
                 text=True,
                 timeout=60,
@@ -336,7 +404,8 @@ class WriteBenchmarkWorker(BaseTestWorker):
             test_file = os.path.join(self.device.mount_point, ".usb_test_tmp")
             dd_proc = subprocess.Popen(
                 [
-                    "/bin/dd", "if=/dev/zero", f"of={test_file}",
+                    find_tool("dd", "/usr/bin/dd", "/bin/dd"),
+                    "if=/dev/zero", f"of={test_file}",
                     "bs=1M", "count=1024", "status=progress", "conv=fdatasync",
                 ],
                 stderr=subprocess.PIPE,
@@ -402,7 +471,7 @@ class FioBenchmarkWorker(BaseTestWorker):
                     self.tr("fio: %s...") % job["name"],
                 )
                 cmd = [
-                    "/usr/bin/fio",
+                    find_tool("fio", "/usr/bin/fio"),
                     f"--name={job['name']}",
                     f"--rw={job['rw']}",
                     f"--bs={job['bs']}",
@@ -471,7 +540,9 @@ class SmartHealthWorker(BaseTestWorker):
         try:
             self._emit_progress(0, self.tr("Running smartctl -a (requires root)..."))
             result = subprocess.run(
-                ["pkexec", "/sbin/smartctl", "-a", self.device.device_node],
+                [find_tool("pkexec", "/usr/bin/pkexec"),
+                 find_tool("smartctl", "/usr/sbin/smartctl", "/sbin/smartctl"),
+                 "-a", self.device.device_node],
                 capture_output=True,
                 text=True,
                 timeout=30,
@@ -497,11 +568,15 @@ class CombinedRootWorker(BaseTestWorker):
         try:
             self._emit_progress(0, self.tr("Running hdparm + smartctl (requires root)..."))
             script = (
-                f"/sbin/hdparm -tT {self.device.device_node}\n"
-                f"/sbin/smartctl -a {self.device.device_node}"
+                f"{find_tool('hdparm', '/usr/sbin/hdparm', '/sbin/hdparm')}"
+                f" -tT {self.device.device_node}\n"
+                f"{find_tool('smartctl', '/usr/sbin/smartctl', '/sbin/smartctl')}"
+                f" -a {self.device.device_node}"
             )
             result = subprocess.run(
-                ["pkexec", "/bin/bash", "-c", script],
+                [find_tool("pkexec", "/usr/bin/pkexec"),
+                 find_tool("bash", "/usr/bin/bash", "/bin/bash"),
+                 "-c", script],
                 capture_output=True,
                 text=True,
                 timeout=90,
@@ -1385,10 +1460,22 @@ class MainWindow(QMainWindow):
 
 
 # ─── Application Entry ──────────────────────────────────
-def main():
-    app = QApplication(sys.argv)
+def main(argv=None):
+    """Application entry point."""
+    argv = list(sys.argv if argv is None else argv)
+    parser = argparse.ArgumentParser(
+        prog=PACKAGE_NAME,
+        description=f"{APP_NAME} - analyse, benchmark and diagnose USB "
+                    "storage devices on Linux.",
+    )
+    parser.add_argument("--version", action="version",
+                        version=f"%(prog)s {APP_VERSION}")
+    parser.parse_args(argv[1:])
+
+    app = QApplication(argv)
     app.setApplicationName(APP_NAME)
     app.setApplicationVersion(APP_VERSION)
+    app.setDesktopFileName("io.github.wachin.USBSpeedTester")
     app.setWindowIcon(app_icon())
     TranslationManager.install(app)
     window = MainWindow()

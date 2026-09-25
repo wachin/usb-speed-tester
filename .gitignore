@@ -47,5 +47,9 @@ translations/*.ts.bak
 # PyQt6
 *.pyc
 
+# Local packaging sandbox used to build the .deb without polluting the parent
+# directory (see the "Debian packaging" section of the README)
+/.build/
+
 # Personal
 8vo/

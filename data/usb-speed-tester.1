@@ -1,0 +1,98 @@
+.TH USB-SPEED-TESTER 1 "2026-09-25" "usb-speed-tester 1.0.0" "User Commands"
+.SH NAME
+usb-speed-tester \- analyse, benchmark and diagnose USB storage devices
+.SH SYNOPSIS
+.B usb-speed-tester
+.RI [ options ]
+.SH DESCRIPTION
+.B usb-speed-tester
+is a PyQt6 desktop application that runs the usual Linux USB diagnostic tools
+and explains their output in plain language.
+.PP
+A device is chosen from a drop\-down list, the tests to run are ticked in a
+collapsible panel, and the results appear in two tabs: a
+.I "Technical Log"
+with the raw command output, and a
+.I "User Analysis"
+with a short interpretation of what the numbers mean. A third tab,
+.IR Explanations ,
+contains an illustrated tutorial on how to recognise a USB 3.x SuperSpeed port
+by the
+.B SS
+marking next to the connector.
+.SH OPTIONS
+.TP
+.B \-\-version
+Print the program version and exit.
+.TP
+.B \-h ", " \-\-help
+Print a short usage message and exit.
+.SH TESTS
+.TP
+.B Bus Analysis
+Runs
+.BR lsusb \-t
+and reports whether the device negotiated USB 3.x (5000M) or USB 2.0 (480M).
+No privileges are needed.
+.TP
+.B Read Benchmark
+Runs
+.BR hdparm \-tT
+through
+.BR pkexec (1)
+to compare cached and physical read speed.
+.TP
+.B Write Benchmark
+Writes a 1 GB test file with
+.BR dd (1)
+after checking that the device has at least 1.5 GB free.
+.TP
+.B Fio Benchmark
+Runs four
+.BR fio (1)
+jobs (sequential read and write, 4K random read and write) and reports
+throughput, IOPS and latency.
+.TP
+.B SMART Health
+Runs
+.B smartctl \-a
+through
+.BR pkexec (1).
+Most USB flash drives use a bridge chip that does not forward SMART data, in
+which case the program says so instead of failing.
+.SH ENVIRONMENT
+.TP
+.B USB_SPEED_TESTER_DATA
+Directory holding the bundled
+.IR assets/ ,
+.I tutorial/
+and
+.I translations/
+data, overriding the built\-in search path. It is used by the autopkgtest
+suite and when running from an unusual layout.
+.SH FILES
+.TP
+.I /usr/share/usb-speed-tester/
+Bundled diagrams, tutorial and compiled translations.
+.TP
+.I /usr/share/doc/usb-speed-tester/
+Copyright and other documentation.
+.SH EXIT STATUS
+.TP
+.B 0
+The program exited normally.
+.TP
+.B 1
+The program was started with an invalid option.
+.SH SEE ALSO
+.BR lsusb (8),
+.BR hdparm (8),
+.BR dd (1),
+.BR fio (1),
+.BR smartctl (8),
+.BR pkexec (1)
+.SH AUTHOR
+Washington Indacochea Delgado <linuxfrontier@proton.me>
+.PP
+This program is free software, licensed under the GNU General Public License
+version 3. It comes with ABSOLUTELY NO WARRANTY.

@@ -1,0 +1,43 @@
+#!/bin/sh
+# Smoke test: the installed program must start, expose --version, and find all
+# of its bundled data without a display.
+set -eu
+
+export QT_QPA_PLATFORM=offscreen
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-$(mktemp -d)}"
+
+# 1. The command line interface works.
+usb-speed-tester --version | grep -q '^usb-speed-tester '
+
+# 2. The bundled data is installed where the program looks for it.
+DATADIR=/usr/share/usb-speed-tester
+for file in \
+    assets/svg/usb3-ss-logo.svg \
+    assets/icon/usb-speed-tester-256.png \
+    tutorial/EN/tutorial.md \
+    tutorial/ES/tutorial.md \
+    tutorial/EN/usb3-ss-ports@2x.png \
+    translations/usbtester_es.qm
+do
+    test -e "$DATADIR/$file" || { echo "missing data file: $file" >&2; exit 1; }
+done
+
+# 3. The desktop entry and the AppStream metadata are valid.
+desktop-file-validate /usr/share/applications/io.github.wachin.USBSpeedTester.desktop
+appstreamcli validate --no-net \
+    /usr/share/metainfo/io.github.wachin.USBSpeedTester.metainfo.xml
+
+# 4. The GUI starts, builds its window and keeps running.
+timeout 30 usb-speed-tester &
+pid=$!
+sleep 12
+if kill -0 "$pid" 2>/dev/null; then
+    kill "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+else
+    wait "$pid" 2>/dev/null || true
+    echo "the GUI exited immediately" >&2
+    exit 1
+fi
+
+echo "smoke test passed"

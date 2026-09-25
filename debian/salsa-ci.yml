@@ -1,0 +1,6 @@
+# CI pipeline for salsa.debian.org. This is the standard Debian pipeline
+# include; it runs lintian, builds the package and executes the autopkgtest
+# suite on the resulting binary.
+---
+include:
+  - https://salsa.debian.org/salsa-ci-team/pipeline/raw/master/recipes/debian.yml

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.wachin.USBSpeedTester</id>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+
+  <name>USB Speed Tester</name>
+  <name xml:lang="es">Analizador de velocidad USB</name>
+  <summary>Analyse, benchmark and diagnose USB storage devices</summary>
+  <summary xml:lang="es">Analiza, mide y diagnostica dispositivos de almacenamiento USB</summary>
+
+  <description>
+    <p>
+      USB Speed Tester is a desktop application that runs the usual Linux USB
+      diagnostic tools for you and explains the results in plain language.
+    </p>
+    <p>It shows:</p>
+    <ul>
+      <li>the negotiated link speed of the bus (5000M for USB 3.x, 480M for USB 2.0);</li>
+      <li>cached and physical read speed with hdparm;</li>
+      <li>real write speed with dd;</li>
+      <li>sequential and 4K random throughput and IOPS with fio;</li>
+      <li>SMART health information when the USB bridge supports it.</li>
+    </ul>
+    <p>
+      An illustrated tutorial explains how to recognise a real SuperSpeed port
+      by the SS marking next to the connector, and the interface is available in
+      English and Spanish.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">io.github.wachin.USBSpeedTester.desktop</launchable>
+
+  <url type="homepage">https://github.com/wachin/usb-speed-tester</url>
+  <url type="bugtracker">https://github.com/wachin/usb-speed-tester/issues</url>
+
+  <developer id="io.github.wachin">
+    <name>Washington Indacochea Delgado</name>
+  </developer>
+
+  <categories>
+    <category>Utility</category>
+    <category>System</category>
+  </categories>
+
+  <keywords>
+    <keyword>USB</keyword>
+    <keyword>benchmark</keyword>
+    <keyword>flash drive</keyword>
+    <keyword>SuperSpeed</keyword>
+    <keyword>storage</keyword>
+    <keyword>hdparm</keyword>
+    <keyword>fio</keyword>
+  </keywords>
+
+  <provides>
+    <binary>usb-speed-tester</binary>
+  </provides>
+
+  <screenshots>
+    <screenshot type="default">
+      <image type="source">https://raw.githubusercontent.com/wachin/usb-speed-tester/main/images/01-usb-speed-tester.png</image>
+      <caption>Analysing a USB flash drive and reading the results</caption>
+    </screenshot>
+  </screenshots>
+
+  <releases>
+    <release version="1.0.0" date="2026-09-25" type="stable">
+      <description>
+        <p>First public release.</p>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.1"/>
+</component>

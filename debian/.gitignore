@@ -1,0 +1,8 @@
+/.debhelper/
+/files
+/debhelper-build-stamp
+/autoreconf.*
+/usb-speed-tester/
+/*.substvars
+/*.debhelper
+/.build-stamp

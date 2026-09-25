@@ -1,0 +1,7 @@
+# autopkgtest suite for usb-speed-tester.
+#
+# The program is a GUI application, so the tests run it against the offscreen
+# Qt platform: no X server or Xvfb is needed and nothing has to be plugged in.
+Tests: smoke
+Depends: @, python3
+Restrictions: allow-stderr

@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![PyQt6](https://img.shields.io/badge/PyQt-6.9+-green?logo=qt&logoColor=white)](https://pypi.org/project/PyQt6/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Linux-lightgrey?logo=linux&logoColor=white)](https://www.linux.org/)
 [![Code Style](https://img.shields.io/badge/Code%20Style-PEP%208-brightgreen)](https://peps.python.org/pep-0008/)
 
@@ -20,10 +20,11 @@ A PyQt6 desktop application for analyzing, benchmarking, and diagnosing USB stor
 | **Advanced fio Benchmark** | Sequential + 4K random read/write with IOPS, latency, and throughput |
 | **SMART Health** | Runs `smartctl -a` (via `pkexec`) for device health diagnostics |
 | **Dual Output Panels** | Technical Log (raw output) + User Analysis (plain-language interpretation) |
-| **Markdown Analysis** | User Analysis is rendered as Markdown/rich text (headings, lists, quotes, tables) |
-| **Inline Diagrams** | Explains the `SS` (SuperSpeed) port marking with diagrams that scale to the window |
+| **Explanations Tab** | A Markdown tutorial with diagrams that teaches how to spot a real SuperSpeed port |
+| **Collapsible Test List** | The five test checkboxes stay folded into one line and show how many are enabled |
+| **About Box** | Author, contact, licence and technologies, with the large application icon and clickable links |
 | **Progress Tracking** | Real-time progress bar for long-running tests |
-| **Internationalization** | All UI strings in English with `QTranslator` support for Spanish |
+| **Internationalization** | All UI strings in English with `QTranslator` support for Spanish; the tutorial ships in EN and ES |
 
 ## Screenshots
 
@@ -67,10 +68,12 @@ python3 main.py
 ```
 
 1. Select a USB device from the dropdown
-2. Choose which tests to run (all enabled by default)
+2. Open **Select tests** and untick anything you do not want to run (all enabled by default)
 3. Click **Run Selected Tests**
 4. View results in the **Technical Log** tab
 5. Read plain-language analysis in the **User Analysis** tab
+6. Open the **Explanations** tab for the illustrated tutorial on `SS` ports, or the
+   **About** menu for author, licence and technology credits
 
 ### Test Details
 
@@ -86,16 +89,22 @@ python3 main.py
 usb-speed-tester/
 ├── main.py              # Complete application (single-file for simplicity)
 ├── assets/
-│   ├── svg/             # Editable vector sources of the diagrams
+│   ├── svg/             # Editable vector sources of the tutorial diagrams
 │   │   ├── usb3-ss-logo.svg      # SS + USB trident SuperSpeed emblem
 │   │   ├── usb3-ss-ports.svg     # Two SS ports vs. a USB 2.0 port
 │   │   └── usb3-ss-laptop.svg    # SS marking engraved next to a laptop port
-│   └── png/             # Generated PNGs actually shown by the application
-│       ├── usb3-ss-logo@2x.png
-│       ├── usb3-ss-ports@2x.png
-│       └── usb3-ss-laptop@2x.png
+│   └── icon/            # Application icon: vector source + generated sizes
+│       ├── usb-speed-tester.svg
+│       └── usb-speed-tester-<size>.png    # 16, 24, 32, 48, 64, 128, 256
+├── tutorial/            # One folder per language for the Explanations tab
+│   ├── EN/
+│   │   ├── tutorial.md           # The tutorial itself
+│   │   └── usb3-ss-*.png         # Diagrams, linked relatively
+│   └── ES/
+│       ├── tutorial.md           # Spanish translation
+│       └── usb3-ss-*.png
 ├── tools/
-│   └── svg_to_png.py    # Regenerates assets/png/ from assets/svg/
+│   └── svg_to_png.py    # Regenerates every PNG above from the SVG sources
 ├── .gitignore
 ├── LICENSE
 ├── README.md
@@ -103,29 +112,47 @@ usb-speed-tester/
     └── usbtester_es.qm  # Spanish translation example
 ```
 
-## Diagrams
+## Tutorial (Explanations tab)
 
-The **User Analysis** tab embeds three diagrams that explain where the `SS`
-(SuperSpeed) marking sits on a laptop or PC. They are drawn as SVG and shipped
-as PNG, because a PNG carries its own glyphs: the labels can never shift or
-disappear because a font is missing on the machine running the program.
+The **Explanations** tab renders `tutorial/<LANG>/tutorial.md` as Markdown,
+together with the diagrams stored in the same folder. The folder is picked from
+the system locale: Spanish systems open `tutorial/ES`, anything else falls back
+to `tutorial/EN`.
 
-Edit the SVG sources, then regenerate the PNGs:
+To add another language, copy the `tutorial/EN` folder, translate
+`tutorial.md`, and run the converter — it refreshes every
+`tutorial/<LANG>` folder it finds:
 
 ```bash
-python3 tools/svg_to_png.py              # all diagrams, 2x for HiDPI screens
+cp -r tutorial/EN tutorial/FR
+# translate tutorial/FR/tutorial.md
+python3 tools/svg_to_png.py
+```
+
+## Diagrams and icons
+
+The diagrams are drawn as SVG and shipped as PNG, because a PNG carries its own
+glyphs: the labels can never shift or disappear because a font is missing on
+the machine running the program. The same applies to the application icon.
+
+Edit the SVG sources, then regenerate every PNG:
+
+```bash
+python3 tools/svg_to_png.py              # diagrams (1x + 2x) and the app icon
 python3 tools/svg_to_png.py --list       # preview without writing anything
-python3 tools/svg_to_png.py --scale 3    # even sharper, larger files
-python3 tools/svg_to_png.py usb3-ss-logo.svg   # just one diagram
+python3 tools/svg_to_png.py --scales 1,2,3   # add even sharper variants
+python3 tools/svg_to_png.py usb3-ss-logo.svg # only one diagram
+python3 tools/svg_to_png.py --no-icon    # diagrams only
 python3 tools/svg_to_png.py --clean      # drop stale PNGs first
 ```
 
-Files are written as `name.png` for `--scale 1` and `name@2x.png` for larger
-scales. At runtime the application picks the smallest variant that still
-covers the screen's device pixel ratio, and falls back to the SVG source if no
-PNG has been generated yet.
+Diagram files are written as `name.png` at scale 1 and `name@2x.png` for larger
+scales. The tutorial links the plain name; at runtime the application picks the
+smallest variant that still covers the screen's device pixel ratio, and falls
+back to the SVG source if no PNG has been generated yet. Keep scale 1 in
+`--scales`, since that is the file the Markdown points at.
 
-> **Tip:** QtSvg (used both by the converter and by that fallback) does not
+> **Tip:** QtSvg (used by the converter and by that fallback) does not
 > implement every SVG feature. In particular it ignores `<tspan>` elements that
 > carry their own `y` coordinate, so a multi-line text block written by Inkscape
 > collapses into a single line. Give each line its own `<text>` element.
@@ -177,7 +204,9 @@ All workers inherit from `BaseTestWorker` which provides:
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+GNU General Public License v3.0 - see [LICENSE](LICENSE) for details.
+
+Copyright © 2026 Washington Indacochea Delgado · linuxfrontier@proton.me
 
 ## Contributing
 

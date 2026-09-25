@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  USB Speed Tester application icon.
+  A white USB trident with motion lines on a blue SuperSpeed badge.
+  Source of assets/icon/usb-speed-tester-<size>.png (see tools/svg_to_png.py).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="badge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4fa1f7"/>
+      <stop offset="0.55" stop-color="#1f6fd6"/>
+      <stop offset="1" stop-color="#113d84"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="8" y="8" width="240" height="240" rx="54" fill="url(#badge)"/>
+  <rect x="10" y="10" width="236" height="236" rx="52" fill="none"
+        stroke="#ffffff" stroke-opacity="0.30" stroke-width="4"/>
+
+  <!-- motion lines: this port is fast -->
+  <g fill="#ffffff">
+    <rect x="30" y="92" width="34" height="13" rx="6.5" fill-opacity="0.95"/>
+    <rect x="22" y="121.5" width="42" height="13" rx="6.5" fill-opacity="0.75"/>
+    <rect x="30" y="151" width="34" height="13" rx="6.5" fill-opacity="0.55"/>
+  </g>
+
+  <!-- USB trident -->
+  <g fill="none" stroke="#ffffff" stroke-width="17" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M88 128 H176"/>
+    <path d="M118 128 L142 96 H156"/>
+    <path d="M136 128 L160 160 H172"/>
+  </g>
+  <g fill="#ffffff">
+    <circle cx="88" cy="128" r="13"/>
+    <circle cx="165" cy="96" r="12"/>
+    <rect x="172" y="148" width="22" height="22" rx="5"/>
+    <polygon points="174,110 214,128 174,146"/>
+  </g>
+</svg>

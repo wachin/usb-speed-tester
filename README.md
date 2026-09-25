@@ -67,6 +67,8 @@ pip install -r requirements.txt
 python3 main.py
 ```
 
+![](images/01-usb-speed-tester.png)
+
 1. Select a USB device from the dropdown
 2. Open **Select tests** and untick anything you do not want to run (all enabled by default)
 3. Click **Run Selected Tests**

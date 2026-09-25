@@ -43,3 +43,6 @@ translations/*.qm
 
 # PyQt6
 *.pyc
+
+# Personal
+8vo/
